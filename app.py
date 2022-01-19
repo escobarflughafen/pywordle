@@ -20,7 +20,6 @@ wordfile = open(os.path.join(PATH, FILENAME), 'r')
 words = wordfile.read().split('\n')
 wordfile.close()
 
-
 def init(words):
     return list(
         filter(
@@ -76,7 +75,7 @@ class Wordle():
     def guess(self):
         for seq in self.history:
             print(seq)
-        input_word = input(term_text_colors.UNDERLINE+'?({}):\t'.format(self.remain_attempts))[:5]
+        input_word = input(term_text_colors.UNDERLINE+'?({}):\t'.format(self.remain_attempts))[:WORDLENGTH]
         if not input_word in words:
             return self.NOT_IN_VOCABULARY
         print_seq = term_text_colors.RESET+"\t"
