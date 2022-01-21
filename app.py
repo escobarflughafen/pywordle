@@ -60,62 +60,138 @@ class term_text_colors:
 
 print(term_text_colors.RESET)
 
+
+class Character():
+    CORRECT_SPOT = 1
+    WRONG_SPOT= 0
+    NOT_IN_ANY_SPOT= -1
+
+    bg_color = {
+        CORRECT_SPOT:       term_bg_colors.GREEN, 
+        WRONG_SPOT:         term_bg_colors.CYAN,
+        NOT_IN_ANY_SPOT:    term_bg_colors.BLACK
+    }
+
+    text_color = {
+        CORRECT_SPOT:       term_text_colors.BLACK, 
+        WRONG_SPOT:         term_text_colors.BLACK,
+        NOT_IN_ANY_SPOT:    term_text_colors.WHITE
+    }
+
+    blocks={
+        CORRECT_SPOT:       '🟩', 
+        WRONG_SPOT:         '🟨',
+        NOT_IN_ANY_SPOT:    '⬜'
+    }
+
+    def __init__(self, ch, status):
+        self.ch = ch
+        self.status = status
+
+    def get_esc_str(self):
+        return self.bg_color[self.status] + self.text_color[self.status] + self.ch
+    
+    def get_blocks(self):
+        return self.blocks[self.status]
+
+class Word():
+    def __init__(self, seq):
+        self.seq = seq
+
+    def get_print_seq(self):
+        print_seq = ''.join(list(map(lambda ch: ch.get_esc_str(), self.seq)))
+        print_seq += term_text_colors.RESET+' '
+        return print_seq
+
+    def get_block_seq(self):
+        return ''.join(list(map(lambda ch: ch.get_blocks(), self.seq)))
+
+
+
 class Wordle():
     NOT_IN_VOCABULARY = 1
     MATCHED = 0
     MISSED = -1
 
     def __init__(self, opt=None):
+        self.round = 0
         self.word = words[random.randint(0, len(words)-1)]
         self.remain_attempts = ATTEMPT_COUNT
         self.history = []
         if opt:
             self.mode=opt.mode
+    
+    def reset(self):
+        self.word = words[random.randint(0, len(words)-1)]
+        self.remain_attempts = ATTEMPT_COUNT
+        self.history = []
+
+    def print_attempts(history):
+        for attempt in history:
+            print(attempt)
 
     def guess(self):
-        for seq in self.history:
-            print(seq)
+        history_seq = (list(map(lambda x: '\t'+x.get_print_seq(), self.history)))
+        print('\n'.join(history_seq))
         input_word = input(term_text_colors.UNDERLINE+'?({}):\t'.format(self.remain_attempts))[:WORDLENGTH]
         if not input_word in words:
             return self.NOT_IN_VOCABULARY
         print_seq = term_text_colors.RESET+"\t"
+        guessed_chars = []
         for i in range(len(self.word)):
             if self.word[i] == input_word[i]:
-                print_seq += term_bg_colors.GREEN+term_text_colors.BLACK+input_word[i]
+                guessed_chars.append(Character(input_word[i], Character.CORRECT_SPOT))
             elif input_word[i] in self.word:
-                print_seq += term_bg_colors.BLUE+term_text_colors.YELLOW+input_word[i]
+                guessed_chars.append(Character(input_word[i], Character.WRONG_SPOT))
             else:
-                print_seq += term_text_colors.RESET + input_word[i]
-        
-        print_seq += term_text_colors.RESET+' '
-        self.history.append(print_seq)
-        print(print_seq)
-        
+                guessed_chars.append(Character(input_word[i], Character.NOT_IN_ANY_SPOT))
+
+        guessed_word = Word(guessed_chars)
+        self.history.append(guessed_word)
+        print(term_text_colors.RESET+'\t'+guessed_word.get_print_seq())
+
         if self.word == input_word:
             return self.MATCHED
         return self.MISSED
 
+    def share(self):
+        s = '\n\tWordle {} {}/{}\n\n'.format(self.round, len(self.history), self.remain_attempts+len(self.history))
+        s += '\n'.join(
+            list(map(lambda word: '\t'+word.get_block_seq(), self.history))
+        )
+        s += '\n'
+        return s
+
+
     def play(self):
+        word = self.word
+        print(self.word)
+        matched = False
         while self.remain_attempts > 0:
             print('')
             result = self.guess()
             if(result==self.NOT_IN_VOCABULARY):
                 print("{}\tnot in word list".format(term_text_colors.RESET))
                 continue
+            self.remain_attempts -= 1
             if(result==self.MATCHED):
-                print("做得好！English Credit + {}".format(random.randint(self.remain_attempts*100,self.remain_attempts*200)))
-                self.__init__()
-                return True
-            else:
-                self.remain_attempts -= 1
-        
-        print("朋友是一个坚韧不拔的纪录片😑, {}".format(self.word))
-        self.__init__()
-        return False
-        
-        
-            
+                matched=True
+                break
+
+        self.round += 1
+
+        print('\n')
+        if matched:
+            print("做得好！English Credit + {}".format(random.randint(self.remain_attempts*100,self.remain_attempts*200)))
+        else:
+            print("朋友是一个坚韧不拔的纪录片😑, {}".format(self.word))
+
+        print(self.share())
+        self.reset()
+        return matched
+
+
 if __name__ == '__main__':
     game = Wordle(opt)
     game.play()
-    
+
