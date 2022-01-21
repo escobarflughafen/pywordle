@@ -165,7 +165,9 @@ class Wordle():
 
     def play(self):
         word = self.word
-        print(self.word)
+        log = open('./log.txt', 'a')
+        log.write('{}\n'.format(self.word))
+        log.close()
         matched = False
         while self.remain_attempts > 0:
             print('')
@@ -180,7 +182,7 @@ class Wordle():
 
         self.round += 1
 
-        print('\n')
+        print('\n\t')
         if matched:
             print("做得好！English Credit + {}".format(random.randint(self.remain_attempts*100,self.remain_attempts*200)))
         else:
